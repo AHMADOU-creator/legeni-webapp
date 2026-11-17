@@ -1,0 +1,8 @@
+- name: Verifier si docker existe
+  shell: command -v docker
+  register: docker_check
+  failed_when: false
+  changed_when: false
+- name: Installer Docker si absent
+  apt: { name: "{{ docker_packages }}", state: present, update_cache: true }
+  when: docker_check.rc != 0
