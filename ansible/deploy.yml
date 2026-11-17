@@ -1,0 +1,68 @@
+---
+# Lot 3 – Déploiement Kubernetes
+# Usage :
+#   ansible-playbook -i inventory.ini deploy.yml -e target_env=staging --ask-vault-pass
+#   ansible-playbook -i inventory.ini deploy.yml -e target_env=prod --ask-vault-pass
+
+- name: Déployer Legeni WebApp sur Kubernetes
+  hosts: local
+  become: false
+  vars_files:
+    - vars/vault.yml
+    - "vars/{{ target_env }}.yml"
+  vars:
+    target_env: staging          # surchargeable avec -e
+  tasks:
+    - name: Vérifier que target_env est valide
+      assert:
+        that:
+          - target_env in ['staging', 'prod']
+        fail_msg: "target_env doit être 'staging' ou 'prod'"
+
+    - name: Appliquer les manifests Kubernetes
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('template', item) | from_yaml_all | list }}"
+        kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') }}"
+      loop:
+        - templates/k8s/00-namespace.yml.j2
+        - templates/k8s/10-secret.yml.j2
+        - templates/k8s/20-redis-statefulset.yml.j2
+        - templates/k8s/30-webapp-deployment.yml.j2
+        - templates/k8s/40-services.yml.j2
+        # - templates/k8s/50-ingress.yml.j2   # bonus
+
+    - name: Attendre la fin du rolling update
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: "legeni-{{ target_env }}"
+        name: legeni-webapp
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+      register: deploy_result
+
+    - name: Smoke test – vérifier la version déployée
+      uri:
+        url: "http://{{ service_url }}/version"
+        return_content: true
+      register: smoke
+      retries: 10
+      delay: 5
+      until: smoke.status == 200
+
+    - name: Afficher le résultat du smoke test
+      debug:
+        msg: "Version déployée : {{ smoke.content }}"
+
+  rescue:
+    - name: Rollback automatique en cas d’échec
+      command: kubectl rollout undo deployment/legeni-webapp -n legeni-{{ target_env }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | default('~/.kube/config') }}"
+
+    - name: Échouer clairement
+      fail:
+        msg: "Déploiement échoué → rollback effectué. Vérifiez les probes / l’image."

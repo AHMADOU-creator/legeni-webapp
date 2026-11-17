@@ -1,0 +1,15 @@
+---
+# Variables spécifiques à l’environnement staging
+namespace: legeni-staging
+replicas: 1
+app_color: "blue"
+service_type: NodePort
+node_port: 30080
+# resources plus légères en staging
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"

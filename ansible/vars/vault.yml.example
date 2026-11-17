@@ -1,0 +1,11 @@
+---
+# Copier ce fichier en vault.yml puis le chiffrer :
+#   ansible-vault create vars/vault.yml
+# ou
+#   cp vars/vault.yml.example vars/vault.yml
+#   ansible-vault encrypt vars/vault.yml
+
+redis_password: "ChangeMeSuperSecretRedis"
+dockerhub_username: "votre_user_dockerhub"
+dockerhub_token: "dckr_pat_xxxxxxxx"          # Access Token Docker Hub
+# éventuels autres secrets (Slack webhook, etc.)

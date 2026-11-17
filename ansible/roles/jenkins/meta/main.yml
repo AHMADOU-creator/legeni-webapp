@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: LEGENI DevOps Team
+  description: Rôle jenkins pour le projet Legeni WebApp
+  license: MIT
+  min_ansible_version: "2.14"
+dependencies: []

@@ -1,0 +1,14 @@
+---
+# Variables spécifiques à l’environnement production
+namespace: legeni-prod
+replicas: 2
+app_color: "green"
+service_type: ClusterIP          # ou NodePort / Ingress selon bonus
+# resources plus confortables en prod
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

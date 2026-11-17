@@ -1,0 +1,27 @@
+---
+# Lot 2 – Infrastructure as Code
+# Installe Docker, Jenkins (conteneur) et Minikube sur une machine vierge.
+# Usage : ansible-playbook -i inventory.ini provision.yml --ask-vault-pass
+
+- name: Provision infrastructure LEGENI (Docker + Jenkins + Minikube)
+  hosts: local
+  become: true
+  vars_files:
+    - vars/vault.yml          # chiffré avec ansible-vault
+  roles:
+    - role: docker
+    - role: jenkins
+    - role: minikube
+  post_tasks:
+    - name: Vérifier que Docker fonctionne
+      command: docker info
+      changed_when: false
+
+    - name: Vérifier que Minikube est démarré
+      command: minikube status
+      changed_when: false
+      become: false
+
+    - name: Afficher l’URL Jenkins
+      debug:
+        msg: "Jenkins devrait être accessible sur http://localhost:8080"
