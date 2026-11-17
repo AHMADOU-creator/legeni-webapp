@@ -53,3 +53,5 @@ secrets/
 tmp/
 temp/
 .cache/
+.vault_pass
+kubeconfig-jenkins.yml
