@@ -1,0 +1,25 @@
+- name: Verifier si minikube existe
+  stat: { path: /usr/local/bin/minikube }
+  register: mk_bin
+- name: Installer minikube si absent
+  get_url: { url: "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64", dest: /usr/local/bin/minikube, mode: "0755", timeout: 120 }
+  when: not mk_bin.stat.exists
+- name: Verifier si kubectl existe
+  shell: command -v kubectl
+  register: kc_bin
+  failed_when: false
+  changed_when: false
+- name: Installer kubectl si absent
+  get_url: { url: "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl", dest: /usr/local/bin/kubectl, mode: "0755", timeout: 120 }
+  when: kc_bin.rc != 0
+- name: Demarrer minikube
+  become: false
+  shell: minikube status >/dev/null 2>&1 && echo deja || (minikube start --driver=docker && echo demarre)
+  register: mk
+  changed_when: "'demarre' in mk.stdout"
+- name: Activer les addons
+  become: false
+  command: "minikube addons enable {{ item }}"
+  loop: [metrics-server, ingress]
+  changed_when: false
+  failed_when: false
