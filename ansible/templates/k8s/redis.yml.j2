@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Secret
+metadata: { name: redis-secret, namespace: "{{ namespace }}" }
+stringData: { REDIS_PASSWORD: "{{ vault_redis_password }}" }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: redis, namespace: "{{ namespace }}" }
+spec:
+  clusterIP: None
+  selector: { app: redis }
+  ports: [{ port: 6379 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: redis, namespace: "{{ namespace }}" }
+spec:
+  serviceName: redis
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata: { labels: { app: redis } }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["sh", "-c", "redis-server --requirepass $REDIS_PASSWORD --appendonly yes"]
+          envFrom: [{ secretRef: { name: redis-secret } }]
+          volumeMounts: [{ name: data, mountPath: /data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: { requests: { storage: 100Mi } }
